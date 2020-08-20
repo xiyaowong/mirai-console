@@ -6,11 +6,12 @@ import java.util.Date
 import java.util.TimeZone
 
 plugins {
-    kotlin("jvm") version Versions.kotlinCompiler
-    kotlin("plugin.serialization") version Versions.kotlinCompiler
+    kotlin("jvm")
+    kotlin("plugin.serialization")
     id("java")
     `maven-publish`
     id("com.jfrog.bintray")
+    id("net.mamoe.kotlin-jvm-blocking-bridge")
 }
 
 version = Versions.console
@@ -31,8 +32,9 @@ kotlin {
     sourceSets.all {
         target.compilations.all {
             kotlinOptions {
-                freeCompilerArgs = freeCompilerArgs + "-Xjvm-default=enable"
                 jvmTarget = "1.8"
+                freeCompilerArgs = freeCompilerArgs + "-Xjvm-default=enable"
+                //useIR = true
             }
         }
         languageSettings.apply {
@@ -45,10 +47,11 @@ kotlin {
             useExperimentalAnnotation("net.mamoe.mirai.utils.MiraiInternalAPI")
             useExperimentalAnnotation("net.mamoe.mirai.utils.MiraiExperimentalAPI")
             useExperimentalAnnotation("net.mamoe.mirai.console.ConsoleFrontEndImplementation")
-            useExperimentalAnnotation("net.mamoe.mirai.console.utils.ConsoleExperimentalAPI")
+            useExperimentalAnnotation("net.mamoe.mirai.console.util.ConsoleExperimentalAPI")
             useExperimentalAnnotation("kotlin.ExperimentalUnsignedTypes")
             useExperimentalAnnotation("kotlin.experimental.ExperimentalTypeInference")
             useExperimentalAnnotation("kotlin.contracts.ExperimentalContracts")
+            useExperimentalAnnotation("kotlinx.serialization.ExperimentalSerializationApi")
         }
     }
 }
@@ -57,10 +60,11 @@ dependencies {
     compileAndRuntime("net.mamoe:mirai-core:${Versions.core}")
     compileAndRuntime(kotlin("stdlib-jdk8", Versions.kotlinStdlib))
 
-    implementation(kotlinx("serialization-runtime", Versions.serialization))
+    implementation(kotlinx("serialization-core", Versions.serialization))
     implementation(kotlin("reflect"))
 
-    implementation("net.mamoe.yamlkt:yamlkt:0.3.1")
+    implementation("net.mamoe.yamlkt:yamlkt:0.4.0")
+    implementation("org.jetbrains.kotlinx:atomicfu:${Versions.atomicFU}")
     api("org.jetbrains:annotations:19.0.0")
     api(kotlinx("coroutines-jdk8", Versions.coroutines))
 
@@ -68,7 +72,7 @@ dependencies {
 
     //api(kotlinx("collections-immutable", Versions.collectionsImmutable))
 
-    testApi(kotlinx("serialization-runtime", Versions.serialization))
+    testApi(kotlinx("serialization-core", Versions.serialization))
     testApi("net.mamoe:mirai-core-qqandroid:${Versions.core}")
     testApi(kotlin("stdlib-jdk8"))
     testApi(kotlin("test"))
@@ -103,23 +107,25 @@ tasks {
     val fillBuildConstants by registering {
         group = "mirai"
         doLast {
-            (compileKotlin as KotlinCompile).source.filter { it.name == "MiraiConsole.kt" }.single().let { file ->
-                file.writeText(file.readText()
-                    .replace(Regex("""val buildDate: Date = Date\((.*)\) //(.*)""")) {
-                        """
+            (compileKotlin as KotlinCompile).source.filter { it.name == "MiraiConsoleBuildConstants.kt" }.single()
+                .let { file ->
+                    file.writeText(
+                        file.readText()
+                            .replace(Regex("""val buildDate: Date = Date\((.*)\) //(.*)""")) {
+                                """
                         val buildDate: Date = Date(${System.currentTimeMillis()}L) // ${
-                            SimpleDateFormat("yyyy-MM-dd HH:mm:ss").apply {
-                                timeZone = TimeZone.getTimeZone("GMT+8")
-                            }.format(Date())
-                        }
+                                    SimpleDateFormat("yyyy-MM-dd HH:mm:ss").apply {
+                                        timeZone = TimeZone.getTimeZone("GMT+8")
+                                    }.format(Date())
+                                }
                     """.trimIndent()
-                    }
-                    .replace(Regex("""const val version: String = "(.*)"""")) {
-                        """
+                            }
+                            .replace(Regex("""const val version: String = "(.*)"""")) {
+                                """
                         const val version: String = "${Versions.console}"
                     """.trimIndent()
-                    }
-                )
+                            }
+                    )
             }
         }
     }

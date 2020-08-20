@@ -1,8 +1,8 @@
 /*
- * Copyright 2020 Mamoe Technologies and contributors.
+ * Copyright 2019-2020 Mamoe Technologies and contributors.
  *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license that can be found through the following link.
+ * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 with Mamoe Exceptions 许可证的约束, 可以在以下链接找到该许可证.
+ * Use of this source code is governed by the GNU AFFERO GENERAL PUBLIC LICENSE version 3 with Mamoe Exceptions license that can be found via the following link.
  *
  * https://github.com/mamoe/mirai/blob/master/LICENSE
  */
@@ -16,13 +16,16 @@ import net.mamoe.mirai.console.plugin.Plugin
 import net.mamoe.mirai.console.plugin.PluginFileExtensions
 import net.mamoe.mirai.console.setting.AutoSaveSettingHolder
 import net.mamoe.mirai.console.setting.Setting
-import net.mamoe.mirai.console.utils.ResourceContainer
+import net.mamoe.mirai.console.util.ResourceContainer
 import net.mamoe.mirai.utils.MiraiLogger
 import kotlin.reflect.KClass
 
 
 /**
  * Java, Kotlin 或其他 JVM 平台插件
+ *
+ * ### ResourceContainer
+ * 实现为 [ClassLoader.getResourceAsStream]
  *
  * @see AbstractJvmPlugin 默认实现
  *
@@ -46,20 +49,28 @@ public interface JvmPlugin : Plugin, CoroutineScope,
         get() = JarPluginLoader
 
     /**
-     * 获取一个 [Setting] 实例
+     * 从 [JarPluginLoader.settingStorage] 获取一个 [Setting] 实例
      */
     @JvmDefault
     public fun <T : Setting> loadSetting(clazz: Class<T>): T = loader.settingStorage.load(this, clazz)
 
-    // TODO: 2020/7/11 document onLoad, onEnable, onDisable
+    /**
+     * 在插件被加载时调用. 只会被调用一次.
+     */
     @JvmDefault
     public fun onLoad() {
     }
 
+    /**
+     * 在插件被启用时调用, 可能会被调用多次
+     */
     @JvmDefault
     public fun onEnable() {
     }
 
+    /**
+     * 在插件被关闭时调用, 可能会被调用多次
+     */
     @JvmDefault
     public fun onDisable() {
     }

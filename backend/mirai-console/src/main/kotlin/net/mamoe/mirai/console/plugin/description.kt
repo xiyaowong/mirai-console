@@ -1,8 +1,8 @@
 /*
- * Copyright 2020 Mamoe Technologies and contributors.
+ * Copyright 2019-2020 Mamoe Technologies and contributors.
  *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license that can be found through the following link.
+ * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 with Mamoe Exceptions 许可证的约束, 可以在以下链接找到该许可证.
+ * Use of this source code is governed by the GNU AFFERO GENERAL PUBLIC LICENSE version 3 with Mamoe Exceptions license that can be found via the following link.
  *
  * https://github.com/mamoe/mirai/blob/master/LICENSE
  */
@@ -13,8 +13,9 @@ import com.vdurmont.semver4j.Semver
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.serializer
-import net.mamoe.mirai.console.setting.internal.map
-import net.mamoe.mirai.console.utils.SemverAsStringSerializerIvy
+import kotlinx.serialization.encodeToString
+import net.mamoe.mirai.console.internal.setting.SemverAsStringSerializerIvy
+import net.mamoe.mirai.console.internal.setting.map
 import net.mamoe.yamlkt.Yaml
 import net.mamoe.yamlkt.YamlDynamicSerializer
 import java.io.File
@@ -55,7 +56,7 @@ public enum class PluginKind {
 }
 
 /** 插件的一个依赖的信息 */
-@Serializable
+@Serializable(with = PluginDependency.SmartSerializer::class)
 public data class PluginDependency(
     /** 依赖插件名 */
     public val name: String,
@@ -65,8 +66,6 @@ public data class PluginDependency(
      * 版本遵循 [语义化版本 2.0 规范](https://semver.org/lang/zh-CN/),
      *
      * 允许 [Apache Ivy 格式版本号](http://ant.apache.org/ivy/history/latest-milestone/ivyfile/dependency.html)
-     *
-     * @see versionKind 版本号类型
      */
     public val version: @Serializable(SemverAsStringSerializerIvy::class) Semver? = null,
     /**
@@ -86,7 +85,10 @@ public data class PluginDependency(
         serializer = { it },
         deserializer = { any ->
             when (any) {
-                is Map<*, *> -> Yaml.nonStrict.parse(serializer(), Yaml.nonStrict.stringify(any))
+                is Map<*, *> -> Yaml.nonStrict.decodeFromString(
+                    serializer(),
+                    Yaml.nonStrict.encodeToString<Map<*, *>>(any)
+                )
                 else -> PluginDependency(any.toString())
             }
         }
